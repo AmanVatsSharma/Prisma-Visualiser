@@ -13,8 +13,9 @@ export function FieldForm({ initialField, onSubmit, onCancel }: FieldFormProps) 
     name: initialField?.name ?? '',
     type: initialField?.type ?? 'String',
     isRequired: initialField?.isRequired ?? false,
+    isList: initialField?.isList ?? false,
     attributes: initialField?.attributes ?? [],
-    defaultValue: initialField?.defaultValue,
+    defaultValue: initialField?.defaultValue ?? null,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -29,6 +30,29 @@ export function FieldForm({ initialField, onSubmit, onCancel }: FieldFormProps) 
         ? prev.attributes.filter((a) => a !== attribute)
         : [...prev.attributes, attribute],
     }))
+  }
+
+  const handleDefaultValueChange = (value: string) => {
+    let parsedValue: string | number | boolean | null = value
+
+    // Convert value based on field type
+    if (value === '') {
+      parsedValue = null
+    } else if (field.type === 'Int' || field.type === 'Float') {
+      const num = Number(value)
+      parsedValue = isNaN(num) ? null : num
+    } else if (field.type === 'Boolean') {
+      parsedValue = value === 'true'
+    }
+
+    setField({ ...field, defaultValue: parsedValue })
+  }
+
+  const getDefaultValueString = (): string => {
+    if (field.defaultValue === null || field.defaultValue === undefined) {
+      return ''
+    }
+    return String(field.defaultValue)
   }
 
   return (
@@ -109,10 +133,8 @@ export function FieldForm({ initialField, onSubmit, onCancel }: FieldFormProps) 
           <input
             id="defaultValue"
             type="text"
-            value={field.defaultValue ?? ''}
-            onChange={(e) =>
-              setField({ ...field, defaultValue: e.target.value || undefined })
-            }
+            value={getDefaultValueString()}
+            onChange={(e) => handleDefaultValueChange(e.target.value)}
             className="w-full px-3 py-2 border rounded-md"
             placeholder="Enter default value..."
           />

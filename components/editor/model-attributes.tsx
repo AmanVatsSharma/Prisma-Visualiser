@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import { PRISMA_MODEL_ATTRIBUTES, type PrismaModelAttribute } from '@/lib/types/prisma-types'
+import { 
+  PRISMA_MODEL_ATTRIBUTES, 
+  type PrismaModelAttribute,
+  type ModelAttributeName 
+} from '@/lib/types/prisma-types'
 
 interface ModelAttributesProps {
   attributes: PrismaModelAttribute[]
@@ -7,7 +11,7 @@ interface ModelAttributesProps {
 }
 
 export function ModelAttributes({ attributes, onChange }: ModelAttributesProps) {
-  const [selectedAttribute, setSelectedAttribute] = useState<string>('')
+  const [selectedAttribute, setSelectedAttribute] = useState<ModelAttributeName | ''>('')
   const [attributeValue, setAttributeValue] = useState<string>('')
 
   const handleAddAttribute = () => {
@@ -35,7 +39,7 @@ export function ModelAttributes({ attributes, onChange }: ModelAttributesProps) 
       <div className="flex gap-2">
         <select
           value={selectedAttribute}
-          onChange={(e) => setSelectedAttribute(e.target.value)}
+          onChange={(e) => setSelectedAttribute(e.target.value as ModelAttributeName | '')}
           className="flex-1 px-3 py-2 border rounded-md text-sm"
         >
           <option value="">Select an attribute...</option>

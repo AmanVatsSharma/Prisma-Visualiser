@@ -20,34 +20,43 @@ export const PRISMA_FIELD_ATTRIBUTES = [
   '@db.VarChar',
 ] as const
 
+export const MODEL_ATTRIBUTE_NAMES = [
+  '@@map',
+  '@@id',
+  '@@unique',
+  '@@index',
+  '@@fulltext',
+  '@@ignore',
+] as const
+
 export const PRISMA_MODEL_ATTRIBUTES = [
   {
-    name: '@@map',
+    name: '@@map' as const,
     description: 'Map model to a different table name',
     requiresValue: true,
   },
   {
-    name: '@@id',
+    name: '@@id' as const,
     description: 'Define composite ID',
     requiresValue: true,
   },
   {
-    name: '@@unique',
+    name: '@@unique' as const,
     description: 'Define composite unique constraint',
     requiresValue: true,
   },
   {
-    name: '@@index',
+    name: '@@index' as const,
     description: 'Define database index',
     requiresValue: true,
   },
   {
-    name: '@@fulltext',
+    name: '@@fulltext' as const,
     description: 'Define full-text search index',
     requiresValue: true,
   },
   {
-    name: '@@ignore',
+    name: '@@ignore' as const,
     description: 'Ignore model in SQL schema',
     requiresValue: false,
   },
@@ -55,8 +64,10 @@ export const PRISMA_MODEL_ATTRIBUTES = [
 
 export type PrismaScalarType = typeof PRISMA_SCALAR_TYPES[number]
 export type PrismaFieldAttribute = typeof PRISMA_FIELD_ATTRIBUTES[number]
-export type PrismaModelAttribute = {
-  name: typeof PRISMA_MODEL_ATTRIBUTES[number]['name']
+export type ModelAttributeName = typeof MODEL_ATTRIBUTE_NAMES[number]
+
+export interface PrismaModelAttribute {
+  name: ModelAttributeName
   value?: string
 }
 

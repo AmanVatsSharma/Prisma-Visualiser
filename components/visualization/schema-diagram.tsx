@@ -12,7 +12,6 @@ import ReactFlow, {
   MarkerType,
   getRectOfNodes,
   getTransformForBounds,
-  Viewport,
 } from 'reactflow'
 import { useSchemaStore } from '@/lib/store/schema-store'
 import { ModelNode } from './model-node'
@@ -28,8 +27,6 @@ const nodeTypes = {
 const edgeTypes = {
   relationship: RelationshipEdge,
 }
-
-const defaultViewport: Viewport = { x: 0, y: 0, zoom: 1 }
 
 export function SchemaDiagram() {
   const models = useSchemaStore((state) => state.models)

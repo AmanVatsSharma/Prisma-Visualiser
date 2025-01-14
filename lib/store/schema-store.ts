@@ -1,27 +1,29 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { RelationConfig } from '@/lib/types/relationship-types'
+import type { RelationType, RelationConfig } from '@/lib/types/relationship-types'
+import type { PrismaModelAttribute } from '@/lib/types/prisma-types'
 
 export interface PrismaField {
   name: string
   type: string
   isRequired: boolean
+  isList: boolean
   attributes: string[]
-  defaultValue?: any
+  defaultValue?: string | number | boolean | null
 }
 
 export interface PrismaModel {
   id: string
   name: string
+  attributes: PrismaModelAttribute[]
   fields: PrismaField[]
-  attributes: string[]
 }
 
 export interface Relationship {
   id: string
   fromModel: string
   toModel: string
-  type: 'ONE_TO_ONE' | 'ONE_TO_MANY' | 'MANY_TO_MANY'
+  type: RelationType
   config: RelationConfig
 }
 

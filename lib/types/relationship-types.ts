@@ -47,13 +47,16 @@ export const REFERENTIAL_ACTIONS = [
   },
 ] as const
 
+export type RelationType = typeof RELATIONSHIP_TYPES[number]['type']
+export type ReferentialAction = typeof REFERENTIAL_ACTIONS[number]['type']
+
 export interface RelationField {
   fieldName: string
   referencedField: string
 }
 
 export interface RelationConfig {
-  onDelete?: typeof REFERENTIAL_ACTIONS[number]['type']
-  onUpdate?: typeof REFERENTIAL_ACTIONS[number]['type']
+  onDelete?: ReferentialAction
+  onUpdate?: ReferentialAction
   fields: RelationField[]
 } 

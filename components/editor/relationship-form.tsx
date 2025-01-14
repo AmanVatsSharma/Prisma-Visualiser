@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useSchemaStore } from '@/lib/store/schema-store'
-import { RELATIONSHIP_TYPES, REFERENTIAL_ACTIONS, type RelationConfig } from '@/lib/types/relationship-types'
+import { 
+  RELATIONSHIP_TYPES, 
+  REFERENTIAL_ACTIONS, 
+  type RelationConfig,
+  type RelationType,
+  type ReferentialAction
+} from '@/lib/types/relationship-types'
 import { validateRelationship, type ValidationError } from '@/lib/utils/validation'
 import { ValidationMessages } from '../ui/validation-messages'
 
@@ -21,10 +27,10 @@ export function RelationshipForm({
   const [relationship, setRelationship] = useState({
     fromModel: fromModelId ?? '',
     toModel: '',
-    type: RELATIONSHIP_TYPES[0].type,
+    type: RELATIONSHIP_TYPES[0].type as RelationType,
     config: {
-      onDelete: 'CASCADE',
-      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE' as ReferentialAction,
+      onUpdate: 'CASCADE' as ReferentialAction,
       fields: [{ fieldName: '', referencedField: '' }],
     } as RelationConfig,
   })
@@ -158,7 +164,7 @@ export function RelationshipForm({
                   value={type.type}
                   checked={relationship.type === type.type}
                   onChange={(e) =>
-                    setRelationship({ ...relationship, type: e.target.value as any })
+                    setRelationship({ ...relationship, type: e.target.value as RelationType })
                   }
                   className="sr-only"
                 />
@@ -245,7 +251,7 @@ export function RelationshipForm({
                   ...relationship,
                   config: {
                     ...relationship.config,
-                    onDelete: e.target.value as any,
+                    onDelete: e.target.value as ReferentialAction,
                   },
                 })
               }
@@ -267,7 +273,7 @@ export function RelationshipForm({
                   ...relationship,
                   config: {
                     ...relationship.config,
-                    onUpdate: e.target.value as any,
+                    onUpdate: e.target.value as ReferentialAction,
                   },
                 })
               }

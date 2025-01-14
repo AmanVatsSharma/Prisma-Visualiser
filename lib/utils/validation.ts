@@ -1,4 +1,5 @@
-import type { PrismaModel, PrismaField } from '@/lib/store/schema-store'
+import type { PrismaField, PrismaModel, Relationship } from '@/lib/store/schema-store'
+import { PRISMA_MODEL_ATTRIBUTES } from '@/lib/types/prisma-types'
 import type { PrismaModelAttribute } from '@/lib/types/prisma-types'
 
 export interface ValidationError {
@@ -74,72 +75,33 @@ export function validateModel(model: PrismaModel): ValidationError[] {
 export function validateField(field: PrismaField): ValidationError[] {
   const errors: ValidationError[] = []
 
-  // Validate field name
+  // Validate name
   if (!field.name) {
     errors.push({
       type: 'error',
       message: 'Field name is required',
-      field: 'name',
+      field: 'name'
     })
   } else if (!/^[a-z][a-zA-Z]*$/.test(field.name)) {
     errors.push({
       type: 'error',
       message: 'Field name must start with a lowercase letter and contain only letters',
-      field: 'name',
+      field: 'name'
     })
   }
 
-  // Check for conflicting attributes
-  if (field.attributes.includes('id') && field.attributes.includes('unique')) {
+  // Validate type
+  if (!field.type) {
     errors.push({
-      type: 'warning',
-      message: 'ID fields are automatically unique, no need for @unique attribute',
-      field: 'attributes',
+      type: 'error',
+      message: 'Field type is required',
+      field: 'type'
     })
   }
 
-  // Validate default value based on type
-  if (field.defaultValue !== undefined) {
-    switch (field.type) {
-      case 'Int':
-      case 'BigInt':
-        if (!/^-?\d+$/.test(field.defaultValue)) {
-          errors.push({
-            type: 'error',
-            message: `Default value must be a valid ${field.type}`,
-            field: 'defaultValue',
-          })
-        }
-        break
-      case 'Float':
-      case 'Decimal':
-        if (!/^-?\d*\.?\d+$/.test(field.defaultValue)) {
-          errors.push({
-            type: 'error',
-            message: `Default value must be a valid ${field.type}`,
-            field: 'defaultValue',
-          })
-        }
-        break
-      case 'Boolean':
-        if (!/^(true|false)$/.test(field.defaultValue)) {
-          errors.push({
-            type: 'error',
-            message: 'Default value must be true or false',
-            field: 'defaultValue',
-          })
-        }
-        break
-      case 'DateTime':
-        if (!Date.parse(field.defaultValue)) {
-          errors.push({
-            type: 'error',
-            message: 'Default value must be a valid date',
-            field: 'defaultValue',
-          })
-        }
-        break
-    }
+  // Validate default value if present
+  if (field.defaultValue !== null) {
+    errors.push(...validateDefaultValue(field))
   }
 
   return errors
@@ -167,86 +129,134 @@ export function validateRelationship(
 ): ValidationError[] {
   const errors: ValidationError[] = []
 
-  // Validate model selections
-  if (!relationship.fromModel) {
+  // Validate source and target models
+  const fromModel = models.find((m) => m.id === relationship.fromModel)
+  const toModel = models.find((m) => m.id === relationship.toModel)
+
+  if (!fromModel) {
     errors.push({
       type: 'error',
-      message: 'Source model is required',
+      message: 'Source model not found',
       field: 'fromModel',
     })
   }
 
-  if (!relationship.toModel) {
+  if (!toModel) {
     errors.push({
       type: 'error',
-      message: 'Target model is required',
+      message: 'Target model not found',
       field: 'toModel',
     })
   }
 
-  if (relationship.fromModel === relationship.toModel) {
-    errors.push({
-      type: 'warning',
-      message: 'Self-referential relationships should be used with caution',
-      field: 'toModel',
-    })
+  if (fromModel && toModel) {
+    // Warn if source and target are the same
+    if (fromModel.id === toModel.id) {
+      errors.push({
+        type: 'warning',
+        message: 'Self-referential relationship detected',
+      })
+    }
+
+    // Validate field mappings
+    if (!relationship.config.fields.length) {
+      errors.push({
+        type: 'error',
+        message: 'At least one field mapping is required',
+        field: 'fields',
+      })
+    } else {
+      // Validate each field mapping
+      relationship.config.fields.forEach((field, index) => {
+        // Check source field exists
+        if (!fromModel.fields.some((f) => f.name === field.fieldName)) {
+          errors.push({
+            type: 'error',
+            message: `Field "${field.fieldName}" not found in source model`,
+            field: `fields[${index}].fieldName`,
+          })
+        }
+
+        // Check target field exists
+        if (!toModel.fields.some((f) => f.name === field.referencedField)) {
+          errors.push({
+            type: 'error',
+            message: `Field "${field.referencedField}" not found in target model`,
+            field: `fields[${index}].referencedField`,
+          })
+        }
+      })
+
+      // Check for duplicate mappings
+      const fieldMappings = new Set<string>()
+      relationship.config.fields.forEach((field, index) => {
+        const mapping = `${field.fieldName}:${field.referencedField}`
+        if (fieldMappings.has(mapping)) {
+          errors.push({
+            type: 'error',
+            message: 'Duplicate field mapping',
+            field: `fields[${index}]`,
+          })
+        }
+        fieldMappings.add(mapping)
+      })
+    }
   }
 
-  // Validate field mappings
-  if (!relationship.config.fields.length) {
-    errors.push({
-      type: 'error',
-      message: 'At least one field mapping is required',
-      field: 'fields',
-    })
+  return errors
+}
+
+function validateDefaultValue(field: PrismaField): ValidationError[] {
+  const errors: ValidationError[] = []
+  
+  if (field.defaultValue === null) {
+    return errors
   }
 
-  const fromModel = models.find((m) => m.id === relationship.fromModel)
-  const toModel = models.find((m) => m.id === relationship.toModel)
+  const defaultValueStr = String(field.defaultValue)
 
-  relationship.config.fields.forEach((field, index) => {
-    if (!field.fieldName) {
-      errors.push({
-        type: 'error',
-        message: 'Source field is required',
-        field: `fields[${index}].fieldName`,
-      })
-    } else if (fromModel && !fromModel.fields.find((f) => f.name === field.fieldName)) {
-      errors.push({
-        type: 'error',
-        message: `Field "${field.fieldName}" does not exist in source model`,
-        field: `fields[${index}].fieldName`,
-      })
-    }
-
-    if (!field.referencedField) {
-      errors.push({
-        type: 'error',
-        message: 'Target field is required',
-        field: `fields[${index}].referencedField`,
-      })
-    } else if (toModel && !toModel.fields.find((f) => f.name === field.referencedField)) {
-      errors.push({
-        type: 'error',
-        message: `Field "${field.referencedField}" does not exist in target model`,
-        field: `fields[${index}].referencedField`,
-      })
-    }
-  })
-
-  // Check for duplicate field mappings
-  const fieldMappings = new Set<string>()
-  relationship.config.fields.forEach((field, index) => {
-    const mapping = `${field.fieldName}:${field.referencedField}`
-    if (fieldMappings.has(mapping)) {
-      errors.push({
-        type: 'error',
-        message: 'Duplicate field mapping',
-        field: `fields[${index}]`,
-      })
-    }
-    fieldMappings.add(mapping)
-  })
+  switch (field.type) {
+    case 'Int':
+    case 'BigInt':
+      if (!/^-?\d+$/.test(defaultValueStr)) {
+        errors.push({
+          type: 'error',
+          message: `Default value must be a valid ${field.type}`,
+          field: 'defaultValue'
+        })
+      }
+      break
+    case 'Float':
+    case 'Decimal':
+      if (!/^-?\d*\.?\d+$/.test(defaultValueStr)) {
+        errors.push({
+          type: 'error',
+          message: `Default value must be a valid ${field.type}`,
+          field: 'defaultValue'
+        })
+      }
+      break
+    case 'Boolean':
+      if (typeof field.defaultValue !== 'boolean') {
+        errors.push({
+          type: 'error',
+          message: 'Default value must be a boolean',
+          field: 'defaultValue'
+        })
+      }
+      break
+    case 'DateTime':
+      try {
+        new Date(defaultValueStr).toISOString()
+      } catch {
+        errors.push({
+          type: 'error',
+          message: 'Default value must be a valid date',
+          field: 'defaultValue'
+        })
+      }
+      break
+  }
 
   return errors
 } 

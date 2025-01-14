@@ -1,9 +1,10 @@
-import type { PrismaModel, ModelField, ModelAttribute, Relationship } from '../store/schema-store'
+import type { PrismaModel, PrismaField, Relationship } from '../store/schema-store'
+import type { PrismaModelAttribute } from '../types/prisma-types'
 
 /**
  * Formats a model attribute into Prisma schema syntax
  */
-function formatAttribute(attr: ModelAttribute): string {
+function formatAttribute(attr: PrismaModelAttribute): string {
   if (attr.value) {
     return `@${attr.name}(${attr.value})`
   }
@@ -21,7 +22,7 @@ function formatFieldAttributes(attributes: string[]): string {
 /**
  * Generates the field type declaration including modifiers
  */
-function formatFieldType(field: ModelField): string {
+function formatFieldType(field: PrismaField): string {
   let type = field.type
   if (field.isList) {
     type = `${type}[]`
